@@ -52,7 +52,7 @@ class StateObserver:
         # Restrição de estabilidade (Equação 58, adaptada da condição de Lyapunov)
         # Esta é a LMI principal que garante a convergência do erro de estimação.
         lmi_stability = cp.bmat([
-            [P, (self.H.T @ P - self.C.T @ Y)],
+            [(-P+Q), (self.H.T @ P - self.C.T @ Y)],
             [(P @ self.H - Y.T @ self.C), P]
         ])
         constraints += [lmi_stability >> 0]

@@ -71,7 +71,7 @@ class FeedbackController:
         for A in A_vertices:
             # Restrição de estabilidade (Equação 44)
             lmi_stability = cp.bmat([
-                [P, (A @ P - B @ Y)],
+                [(-P+Q), (A @ P - B @ Y)],
                 [(P @ A.T - Y.T @ B.T), P]
             ])
             constraints += [lmi_stability >> 0]

@@ -24,10 +24,14 @@ class TorqueController:
         self.PG = 0
         self.PD = 0
         self.ED = 1e-16
+        self.EG = 1e-16
         self.Cp_star = 0
         self.wr = 1.5
         self.wg = 1
         self.ot = 1e-16
+        self.states = np.array([self.wr, self.wg, self.ot]).reshape(-1,1)
+
+
 
 
     def update(self,v, lmbd_star, prnt=False):
@@ -61,6 +65,8 @@ class TorqueController:
         self.wr = self.wr+d_states[0]
         self.wg = self.wg+d_states[1]
         self.ot = self.ot+d_states[2]
+
+        self.states = np.array([self.wr, self.wg, self.ot]).reshape(-1,1)
         
         
         self.K_mppt = K_mppt
@@ -68,6 +74,7 @@ class TorqueController:
         self.tau_g = tau_g
         self.PG = tau_g*self.wg
         self.Cp_star = Cp_star
+        self.EG = self.EG + self.PG
 
         if prnt: self.show_attributes()
 
