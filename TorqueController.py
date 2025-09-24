@@ -14,16 +14,36 @@ class TorqueController:
         self.rho = 1.225 #Air density
         self.Ar = np.pi * 57.5**2 #Rotor area
         self.Rr = 57.5
-        self.K = 0
+        self.B_dt = 755.49 #D_exp_exp_exp_exp_exp_exp_exp_expamping of the drivetrain
+        self.K_dt = 2.7*(1e9) #Stiness of the drivetrain
+        self.J_r = 55*(1e6) #Inertia of the rotor
+        self.J_g = 55*(1e6)
+        self.K_mppt = 0
         self.tau_g=0
+        self.tau_r=0
         self.PG = 0
+        self.PD = 0
+        self.ED = 1e-16
         self.Cp_star = 0
 
-    def update(self,lmbd_star,wg, prnt=False):
+    def update(self,v, wr, wg, lmbd_star, prnt=False):
+
+        lmbd = wr*self.Rr/v
+        Cp = Cp_calc(lmbd)
+        tau_r = 0.5*self.rho*self.Ar*Cp*(v**3)/wr
+
+        self.PD = self.B_dt*((wr - wg)**2)
+
+        self.ED = self.ED + self.PD
+
         Cp_star = Cp_calc(lmbd_star)
-        K = 0.5*self.rho*self.Ar*(self.Rr**3)*Cp_star/(lmbd_star**3)
-        tau_g = K*(wg**2)
-        self.K = K
+        K_mppt = 0.5*self.rho*self.Ar*(self.Rr**3)*Cp_star/(lmbd_star**3)
+        tau_g = K_mppt*(wg**2)
+
+        self.PG = tau_g*wg
+        
+        self.K_mppt = K_mppt
+        self.tau_r = tau_r
         self.tau_g = tau_g
         self.PG = tau_g*wg
         self.Cp_star = Cp_star
