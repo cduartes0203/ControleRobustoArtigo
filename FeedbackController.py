@@ -34,7 +34,7 @@ class FeedbackController:
         self.lmbd_star = self.lmbd_opt+self.u_k
         
         
-    def solve_lqr_gain(self, Q=np.diag([1, 2.5e-5]), R=np.array([[100.0]])):
+    def solve_lqr_gain(self, Q=np.diag([1, 1]), R=np.array([[1e-5]])):
         """
         Calcula os ganhos ótimos K1 e K2 usando a solução LMI para o problema
         de LQR Robusto descrito na Seção 4.4.2 do artigo.
