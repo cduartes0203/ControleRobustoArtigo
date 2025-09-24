@@ -1,5 +1,6 @@
 import numpy as np
-import cvxpy as cp
+import pandas as pd
+import cvxpy as cp # type: ignore
 
 class StateObserver:
     def __init__(self,Di=1, Bi=1e-3, ts=1):
@@ -78,13 +79,13 @@ class StateObserver:
             Y_val = Y.value
             L_val = np.linalg.inv(P_val) @ Y_val.T
             self.L = L_val.flatten()
-            print(f"Ganho L calculado com sucesso: {self.L}")
+            #print(f"Ganho L calculado com sucesso: {self.L}")
             return self.L
         else:
             print(f"Falha ao resolver a LMI. Status: {problem.status}")
             return None
 
-    def update_state(self, y_k):
+    def update_state(self, y_k, prnt=False):
         """
         Atualiza o estado estimado usando a equação do observador (Equação 70).
 
@@ -109,5 +110,18 @@ class StateObserver:
         x_hat_k_plus_1 = self.H @ x_hat_k + correction_term
         
         self.x_hat = x_hat_k_plus_1.flatten()
+        
+        if prnt: self.show_attributes()
+        
         return self.x_hat
     
+    def show_attributes(self):
+        print('________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________')
+        print('State Observer parameters:')
+        df = pd.DataFrame()
+        for key, value in self.__dict__.items():
+            df[key] = [value]
+            #print(f"{key}: {value}")
+        pd.set_option('display.width', 1000)
+        pd.set_option('display.max_columns', 100) 
+        print(df)
