@@ -1,5 +1,6 @@
 import numpy as np
-import cvxpy as cp
+import pandas as pd
+import cvxpy as cp # type: ignore
 
 
 class FeedbackController:
@@ -100,10 +101,10 @@ class FeedbackController:
         self.K = K_val.flatten()
         self.K1, self.K2 = self.K[0], self.K[1]
         
-        print(f"Ganhos LQR calculados com sucesso: K1 = {self.K1:.4f}, K2 = {self.K2:.4f}")
+        #print(f"Ganhos LQR calculados com sucesso: K1 = {self.K1:.4f}, K2 = {self.K2:.4f}")
         return self.K
         
-    def compute_input(self, beta_hat, beta_ref, dt=1):
+    def compute_input(self, beta_hat, beta_ref, dt=1, prnt=False):
         """
         Calcula a ação de controlo u_k (ou seja, Δλ) com base na lei de controlo
         da Equação (83).
@@ -128,4 +129,18 @@ class FeedbackController:
         # 3. Atualizar o estado da ação anterior para a próxima iteração
         self.u_k = u_k
         self.lmbd_star=self.lmbd_opt+u_k
-        return u_k
+        
+        if prnt: self.show_attributes()
+    
+    
+    def show_attributes(self):
+        print('________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________')
+        print('Feedback Controller parameters:')
+        df = pd.DataFrame()
+        for key, value in self.__dict__.items():
+            df[key] = [value]
+            #print(f"{key}: {value}")
+        pd.set_option('display.width', 1000)
+        pd.set_option('display.max_columns', 100) 
+        print(df)
+       
