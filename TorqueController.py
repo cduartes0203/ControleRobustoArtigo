@@ -2,17 +2,12 @@ import numpy as np
 import pandas as pd
 from numpy import polyfit
 
-path = 'CpVersusTSR&Pitch_WT_Perf_V1.csv'
-df = pd.read_csv(path,header=None)
-x = df.iloc[:,0].values
-y = [df.iloc[:,i+6].values for i in range(6)]
-ymax = [np.max(df.iloc[:,i+6].values) for i in range(6)]
-x_max = [np.where(df.iloc[:,i+6].values==np.max(df.iloc[:,i+6].values)) for i in range(6)]
+def Cp_calc(lmbd_in=0):
+    path = 'Cp_X_lambda.csv'
+    df = pd.read_csv(path)
+    dist = np.abs(df['lambda'].values - lmbd_in)
 
-coeffs = polyfit(x, y[0], 5)
-def Cp_calc(x):
-    return coeffs[0] * x**5 + coeffs[1] * x**4 + coeffs[2] * x**3 + coeffs[3] * x**2 + coeffs[4] * x**1 + coeffs[5] * x**0 
-
+    return (df['cp'].values[np.argmin(dist)])
 
 class TorqueController:
     def __init__(self):
