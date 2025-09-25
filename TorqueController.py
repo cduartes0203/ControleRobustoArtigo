@@ -16,10 +16,12 @@ class TorqueController:
         self.PD = None
         self.ED = 0
         self.EG = 0
+        self.Cp_star = params['Cp_Max']
+        self.Lambda_star = params['Lambda_opt']
         self.K_mppt = None
         self.states = np.array([1,1,1e-8]).reshape(-1,1)
 
-    def update(self, v, dt, **params):
+    def update(self, v, dt, u_k=0, **params):
 
         rho = params['rho'] 
         Ar = params['Ar'] 
@@ -37,7 +39,12 @@ class TorqueController:
         lmbd = wr*Rr/v
         Cp = Cp_calc(lmbd)
 
-        K_mppt = 0.5*rho*Ar*(Rr**3)*Cp_Max/(Lambda_opt**3)
+        self.Lambda_star = self.Lambda_star + u_k
+        
+        if u_k!=0:
+            self.Cp_star = Cp_calc(self.Lambda_star)
+
+        K_mppt = 0.5*rho*Ar*(Rr**3)*self.Cp_star/(self.Lambda_star**3)
         self.K_mppt = K_mppt
 
         tau_r = 0.5*rho*Ar*Cp*(v**3)/wr
@@ -62,9 +69,13 @@ class TorqueController:
         #print('d_states:',d_states.T)
         self.states = self.states + d_states * dt
 
+        return self.ED
+
     def show_attributes(self):
         print('Torque Controller parameters:')
         df = pd.DataFrame()
         for key, value in self.__dict__.items():
             df[key] = [value]
+        pd.set_option('display.width', 1000)
+        pd.set_option('display.max_columns', 100) 
         print(df)

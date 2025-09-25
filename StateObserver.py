@@ -3,21 +3,22 @@ import pandas as pd
 import cvxpy as cp # type: ignore
 
 class StateObserver:
-    def __init__(self,Di=1, Bi=1e-3, ts=1):
+    def __init__(self, TS=1, **params):
         """
         Inicializa o Observador de Estado.
         ts: Período de amostragem (Ts ou dt).
         """
-        self.ts = ts
+        Di, Bi = 1, 1e-3,
+        self.TS = TS
         # Vetor de estado estimado inicial: [D_hat, beta_hat]
-        self.x_hat = np.array([Di, Bi])
+        self.x_hat = np.array([Di, Bi]).reshape(-1,1)
         
         # Ganho do Observador, L. Será calculado pelo método solve_lmi_gain.
         self.L = None
         
         # Matrizes do observador para o estudo de caso (Equação 71)
         # H = [[1, ts], [0, 1]]
-        self.H = np.array([[1, ts], [0, 1]])
+        self.H = np.array([[1, TS], [0, 1]])
         # C = [1, 0]
         self.C = np.array([1, 0]).reshape(1, 2)
         
@@ -78,14 +79,14 @@ class StateObserver:
             P_val = P.value
             Y_val = Y.value
             L_val = np.linalg.inv(P_val) @ Y_val.T
-            self.L = L_val.flatten()
+            self.L = (L_val.flatten()).reshape(-1,1)
             #print(f"Ganho L calculado com sucesso: {self.L}")
-            return self.L
+            
         else:
             print(f"Falha ao resolver a LMI. Status: {problem.status}")
-            return None
+            
 
-    def update_state(self, y_k, prnt=False):
+    def update(self, y_k, prnt=False):
         """
         Atualiza o estado estimado usando a equação do observador (Equação 70).
 
@@ -98,25 +99,17 @@ class StateObserver:
         if self.L is None:
             raise RuntimeError("O ganho L não foi calculado. Chame 'solve_lmi_gain' primeiro.")
         
-        # Equação 70: x_hat_{k+1} = H * x_hat_k + L * (y_k - C * x_hat_k)
-        x_hat_k = self.x_hat.reshape(-1, 1)
-        L_reshaped = self.L.reshape(-1, 1)
-        
-        # Termo de correção
-        estimation_error = y_k - self.C @ x_hat_k
-        correction_term = L_reshaped * estimation_error
+       
         
         # Próximo estado estimado
-        x_hat_k_plus_1 = self.H @ x_hat_k + correction_term
-        
-        self.x_hat = x_hat_k_plus_1.flatten()
+        self.x_hat = self.H @ self.x_hat + self.L @ (y_k - (self.C @ self.x_hat))
+    
         
         if prnt: self.show_attributes()
         
-        return self.x_hat
+        return self.x_hat[0], self.x_hat[1]
     
     def show_attributes(self):
-        print('________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________')
         print('State Observer parameters:')
         df = pd.DataFrame()
         for key, value in self.__dict__.items():
