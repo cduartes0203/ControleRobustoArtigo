@@ -4,7 +4,7 @@ import cvxpy as cp # type: ignore
 
 
 class FeedbackController:
-    def __init__(self):
+    def __init__(self, **params):
         """
         Inicializa o Controlador de Feedback (Degradation-Rate Controller).
 
@@ -18,11 +18,11 @@ class FeedbackController:
         self.K2 = None
 
         #lambda ótimo
-        self.lmbd_opt = 7.6
-        self.vwL = 0.2
-        self.vwU = 5
-        self.Bdt = 755.49
-        self.Rr = 57.5
+        self.lmbd_opt = params['Lambda_opt']
+        self.vwL = params['Vmin']
+        self.vwU = params['Vmax']
+        self.Bdt = params['Bdt']
+        self.Rr = params['Rr']
 
         # Parâmetros para o LQR Robusto
         self.gamma_min = (self.Bdt*(self.vwL**2))*2*self.lmbd_opt/(self.Rr**2)
@@ -102,9 +102,9 @@ class FeedbackController:
         self.K1, self.K2 = self.K[0], self.K[1]
         
         #print(f"Ganhos LQR calculados com sucesso: K1 = {self.K1:.4f}, K2 = {self.K2:.4f}")
-        return self.K
         
-    def compute_input(self, beta_hat, beta_ref, dt=1, prnt=False):
+        
+    def update(self, beta_hat, beta_ref, dt=1):
         """
         Calcula a ação de controlo u_k (ou seja, Δλ) com base na lei de controlo
         da Equação (83).
@@ -127,14 +127,13 @@ class FeedbackController:
         u_k = -self.K1 * self.u_k - self.K2 * self.z_k
         
         # 3. Atualizar o estado da ação anterior para a próxima iteração
-        self.u_k = u_k
         self.lmbd_star=self.lmbd_opt+u_k
+        self.u_k = u_k
+
+        return self.lmbd_star
         
-        if prnt: self.show_attributes()
-    
     
     def show_attributes(self):
-        print('________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________________')
         print('Feedback Controller parameters:')
         df = pd.DataFrame()
         for key, value in self.__dict__.items():

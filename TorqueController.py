@@ -21,7 +21,7 @@ class TorqueController:
         self.K_mppt = None
         self.states = np.array([1,1,1e-8]).reshape(-1,1)
 
-    def update(self, v, dt, u_k=0, **params):
+    def update(self, v, dt, Lambda_star=None, **params):
 
         rho = params['rho'] 
         Ar = params['Ar'] 
@@ -39,9 +39,7 @@ class TorqueController:
         lmbd = wr*Rr/v
         Cp = Cp_calc(lmbd)
 
-        self.Lambda_star = self.Lambda_star + u_k
-        
-        if u_k!=0:
+        if Lambda_star!= None:
             self.Cp_star = Cp_calc(self.Lambda_star)
 
         K_mppt = 0.5*rho*Ar*(Rr**3)*self.Cp_star/(self.Lambda_star**3)

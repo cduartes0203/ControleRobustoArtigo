@@ -86,7 +86,7 @@ class StateObserver:
             print(f"Falha ao resolver a LMI. Status: {problem.status}")
             
 
-    def update(self, y_k, prnt=False):
+    def update(self, y_k):
         """
         Atualiza o estado estimado usando a equação do observador (Equação 70).
 
@@ -98,14 +98,10 @@ class StateObserver:
         """
         if self.L is None:
             raise RuntimeError("O ganho L não foi calculado. Chame 'solve_lmi_gain' primeiro.")
-        
-       
+
         
         # Próximo estado estimado
         self.x_hat = self.H @ self.x_hat + self.L @ (y_k - (self.C @ self.x_hat))
-    
-        
-        if prnt: self.show_attributes()
         
         return self.x_hat[0], self.x_hat[1]
     
