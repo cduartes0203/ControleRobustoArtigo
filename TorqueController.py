@@ -20,14 +20,14 @@ class TorqueController:
         self.PD_ = np.array([0])
         self.ED_ = np.array([0])
         self.EG_ = np.array([0])
-        self.tau_r = 0
-        self.tau_g = 0
+        self.tR = 1e-10
+        self.tG = 1e-10
         self.Cp_star = params['Cp_Max']
         self.lambda_star = params['Lambda_opt']
-        self.K_mppt = None
-        self.sttsB = np.array([1e-10,1e-10,1e-10]).reshape(-1,1)
-        self.sttsA = np.array([1e-10,1e-10,1e-10]).reshape(-1,1)
-        self.dstts =  np.array([1e-10,1e-10,1e-10]).reshape(-1,1)
+        self.K_mppt = 0
+        self.X = np.array([1e-10,1e-10,1e-10]).reshape(-1,1)
+        self.dX =  np.array([1e-10,1e-10,1e-10]).reshape(-1,1)
+        self.k = 0
 
     def update(self, v, dt, uk=0, **params):
 
@@ -38,31 +38,20 @@ class TorqueController:
         K_dt = params['Kdt']
         J_r = params['Jr']
         J_g = params['Jg']
-        Cp_Max = params['Cp_Max']
-        Lambda_opt = params['Lambda_opt']
-        wr = self.sttsB[0]
-        wg = self.sttsB[1]
-        ot = self.sttsB[2]
-
-        self.sttsB = self.sttsA
+        wr = self.X[0]
+        wg = self.X[1]
 
         lmbd = wr*Rr/v
         Cp = Cp_calc(lmbd)
-        tau_r = 0.5*rho*Ar*Cp*(v**3)/wr
-        if wr < 0: tau_r = 0
-        lambda_star = Lambda_opt + uk
 
-        
-        Cp_star = Cp_calc(lambda_star)
-        self.Cp_star = Cp_star
-        self.lambda_star = lambda_star
+        self.lambda_star = self.lambda_star + uk
+        self.Cp_star = Cp_calc(self.lambda_star)
+        self.K_mppt = 0.5*rho*Ar*(Rr**3)*self.Cp_star/(self.lambda_star**3)
 
-        self.K_mppt = 0.5*rho*Ar*(Rr**3)*Cp_star/(lambda_star**3)
-        
-        
-        tau_g = self.K_mppt*(wg**2)
-        self.tau_g = tau_g
-        self.tau_r = tau_r
+        if self.k >0:
+            self.tR = 0.5*rho*Ar*Cp*(v**3)/wr
+            self.tG = self.K_mppt*(wg**2)
+      
 
         A=np.array([[-B_dt/J_r,  B_dt/J_r, -K_dt/J_r],
                     [ B_dt/J_g, -B_dt/J_g,  K_dt/J_g],
@@ -72,14 +61,12 @@ class TorqueController:
                       [    0, -1/J_g],
                       [    0,      0]])
         
-        tau = np.array([tau_r, tau_g]).reshape(-1,1) 
-        d_states = (A@self.sttsB)+(B@tau)
-        #print('d_states:',d_states, d_states*dt)
-        self.sttsA = self.sttsB + d_states * dt
-        self.dstts = d_states
+        tau = np.array([self.tR, self.tG]).reshape(-1,1) 
+        self.dX = (A@self.X)+(B@tau)
+        self.X = self.X + self.dX * dt
         
         self.PD = B_dt*((wr - wg)**2)
-        self.PG = tau_g*wg
+        self.PG = self.tG*wg
         self.ED = self.ED + self.PD
         self.EG = self.EG + self.PG
 
@@ -87,6 +74,8 @@ class TorqueController:
         self.ED_ = np.append(self.ED_, self.ED)
         self.PG_ = np.append(self.PG_, self.PG)
         self.PD_ = np.append(self.PD_, self.PD)
+
+        self.k = self.k + 1
 
         return self.ED
 
